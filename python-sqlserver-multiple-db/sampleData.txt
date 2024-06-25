@@ -1,0 +1,5 @@
+server = 'navsql14'
+database = 'EmployeeDB'
+username = 'azureuser'
+password = 'N@v#admin*14'
+folder_path = r'C:\Users\nasingh\OneDrive - WatchGuard Technologies Inc\Documents\python\python-sqlserver\tables'
