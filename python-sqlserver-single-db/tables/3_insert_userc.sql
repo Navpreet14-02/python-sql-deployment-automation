@@ -1,2 +1,2 @@
 INSERT INTO Employee
-VALUES (1,'Harsh','Bhargava','Jaipur,Rajasthan');
+VALUES (3,'Harsh','Bhargava','Jaipur,Rajasthan');

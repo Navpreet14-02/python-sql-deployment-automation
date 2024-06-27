@@ -13,13 +13,11 @@ class DatabaseExecutor:
                 cursor.execute(sql_script)
                 conn.commit()
 
-    def execute_sql_from_folder(self, folder_path):
-            
+    def execute_sql_from_folder(self, folder_path):  
         try:
             for file_name in os.listdir(folder_path):
                 if file_name.endswith('.sql'):
                     file_path = os.path.join(folder_path, file_name)
-
                     try:
                         self.execute_sql_from_file(file_path)
                     except pyodbc.Error as err:
