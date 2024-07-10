@@ -3,7 +3,7 @@ import pyodbc
 
 class DatabaseExecutor:
     def __init__(self, server, database, username, password):
-        self.__connection_string = f'Driver={{ODBC Driver 18 for SQL Server}};Server={server};Database={database};Uid={username};Pwd={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
+        self.__connection_string = f'Driver={{SQL Server}};Server={server};Database={database};Uid={username};Pwd={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
 
     def execute_sql_from_file(self, file_path):
         with pyodbc.connect(self.__connection_string) as conn:
