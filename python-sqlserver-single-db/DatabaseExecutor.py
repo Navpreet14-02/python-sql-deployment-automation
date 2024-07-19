@@ -8,11 +8,13 @@ class DatabaseExecutor:
 
 
     def get_database_tables(self):
+
         with pyodbc.connect(self.__connection_string) as conn:
             cursor=conn.cursor()
             cursor.execute("SELECT * FROM sys.tables")
             tables = cursor.fetchall()
-            print(tables)
+            for row in tables:
+                print(row)
 
 
     def execute_sql_from_file(self, file_path):
