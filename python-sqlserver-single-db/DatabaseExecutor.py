@@ -24,11 +24,6 @@ class DatabaseExecutor:
                 sql_script = file.read()
                 print(sql_script)
                 cursor.execute(sql_script)
-
-                tables = cursor.fetchall()
-                for row in tables:
-                    print(row)
-
                 conn.commit()
 
     def execute_sql_from_folder(self, folder_path):  
