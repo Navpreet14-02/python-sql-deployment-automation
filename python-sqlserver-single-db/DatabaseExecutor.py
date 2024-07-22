@@ -37,7 +37,9 @@ class DatabaseExecutor:
                 if file_name.endswith('.sql'):
                     file_path = os.path.join(folder_path, file_name)
                     try:
+                        self.get_database_tables()
                         self.execute_sql_from_file(file_path)
+                        self.get_database_tables()
                     except pyodbc.Error as err:
                         print(f"An error occurred while running the query in the file {file_name}. \n")
                         print(f"Error: {err}")
