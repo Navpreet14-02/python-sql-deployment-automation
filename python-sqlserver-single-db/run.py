@@ -11,5 +11,5 @@ folder_path = sys.argv[5]
 server_url = server_name + ".database.windows.net"
 # server_url = server_name
 executor = DB.DatabaseExecutor(server_url, database, username, password)
-executor.get_database_tables()
+executor.execute_sql_from_folder(folder_path)
 
