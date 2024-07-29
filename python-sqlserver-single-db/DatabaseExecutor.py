@@ -4,8 +4,8 @@ import pyodbc
 class DatabaseExecutor:
     def __init__(self, server, database, username, password):
         self.__connection_string = f'Driver={{SQL Server}};Server={server};Database={database};Uid={username};Pwd={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
-        print(username)
-        print(password)
+        # print(username)
+        # print(password)
 
 
     def get_database_tables(self):
@@ -32,9 +32,9 @@ class DatabaseExecutor:
                 if file_name.endswith('.sql'):
                     file_path = os.path.join(folder_path, file_name)
                     try:
-                        self.get_database_tables()
+                        # self.get_database_tables()
                         self.execute_sql_from_file(file_path)
-                        self.get_database_tables()
+                        # self.get_database_tables()
                     except pyodbc.Error as err:
                         print(f"An error occurred while running the query in the file {file_name}. \n")
                         print(f"Error: {err}")
