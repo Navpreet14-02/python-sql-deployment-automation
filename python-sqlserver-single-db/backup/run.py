@@ -8,5 +8,6 @@ if __name__ == "__main__":
     username = sys.argv[3]
     password = sys.argv[4]
     
+    server_url = server + ".database.windows.net"
     backup_executor = Backup(server, database, username, password)
     backup_executor.BackupDB()
