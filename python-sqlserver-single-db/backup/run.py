@@ -1,5 +1,5 @@
 import sys
-import BackupDB as Backup
+from BackupDB import Backup
 
 if __name__ == "__main__":
 
@@ -8,4 +8,5 @@ if __name__ == "__main__":
     username = sys.argv[3]
     password = sys.argv[4]
     
-    Backup.BackupDB(server, database, username, password)
+    backup_executor = Backup(server, database, username, password)
+    backup_executor.BackupDB()
