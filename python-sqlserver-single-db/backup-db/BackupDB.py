@@ -1,7 +1,7 @@
 import pyodbc
-import FileLogger
 import sys
-from datetime import date
+# import FileLogger
+# from datetime import date
 
 # logger = FileLogger()
 
