@@ -4,8 +4,10 @@ import pyodbc
 class DatabaseExecutor:
     def __init__(self, server, database, username, password):
         self.__connection_string = f'Driver={{SQL Server}};Server={server};Database={database};Uid={username};Pwd={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
-        # print(username)
-        # print(password)
+        print(server)
+        print(database)
+        print(username)
+        print(password)
 
 
     def get_database_tables(self):

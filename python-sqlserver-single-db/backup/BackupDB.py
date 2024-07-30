@@ -7,6 +7,10 @@ class Backup:
     def __init__(self,server_name,database,username,password):
         self.__connection_string = f'Driver={{SQL Server}};Server={server_name};Database={database};Uid={username};Pwd={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
         self.database = database
+        print(server_name)
+        print(database)
+        print(username)
+        print(password)
 
     def BackupDB(self):
         # connection_string = f'Driver={{SQL Server}};Server={server_name};Database={database};Uid={username};Pwd={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
@@ -26,6 +30,7 @@ class Backup:
                     quit()
         except pyodbc.Error as err:
             print(f"Database Connection could not be established: {err}")
+            
 
 
 
