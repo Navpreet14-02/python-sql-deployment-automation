@@ -2,7 +2,7 @@ import pyodbc
 from datetime import date
 
 def BackupDB(server_name,database,username,password):
-    connection_string = f'Driver={{SQL Server}};Server={server_name};Database={database};Uid={username};Pwd={password};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=30;'
+    connection_string = f'Driver={{SQL Server}};Server={server_name};Database={database};Uid={username};Pwd={password}'
     try:
         print("Backup Function Executed:")
         with pyodbc.connect(connection_string) as conn:
