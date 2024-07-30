@@ -9,6 +9,7 @@ def BackupDB(server_name,database,username,password):
         cursor=conn.cursor()
         today = date.today()
         backup_query = f"SELECT * FROM {database} INTO {database+f"-{date.isoformat(today)}"}"
+        print(backup_query)
 
         # try:
         cursor.execute(backup_query)
@@ -17,7 +18,6 @@ def BackupDB(server_name,database,username,password):
         #     print(f"Error while creating backup: {err}")
         #     quit()
 
-        print(backup_query)
 
     # except pyodbc.Error as err:
     #     print(f"Database Connection could not be established: {err}")
