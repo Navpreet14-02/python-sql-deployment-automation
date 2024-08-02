@@ -1,0 +1,63 @@
+@Library("P-Funk")
+import org.daas_watchguard.basefunctions.*
+import org.daas_watchguard.notifications.*
+
+def microserviceBuild = new Microservices() // org.daas_watchguard.basefunctions.Microservices
+def notifications = new Teams() // org.daas_watchguard.notifications.Teams
+
+String githubUser = "jenkins-gh"
+String githubEnterprise = "github.infra.int.daas-watchguard.com"
+String teamName = "Team-Infrastructure"
+String repoName = "endpoint-automation"
+String spainrepoName = "spain-sql-store"
+
+String githubUrl = "https://${githubEnterprise}/${teamName}/${repoName}.git"
+String spaingithubUrl = "https://${githubEnterprise}/${teamName}/${spainrepoName}.git"
+
+// Define branch variable
+String branch = env.BRANCH_NAME
+
+// Define parameters
+properties([
+    parameters([
+        string(name: 'Server_Name', description: 'Name of the server'),
+        string(name: 'Database_Name', description: 'Name of the database'),
+        string(name: 'Query_Folder_Path', description: 'Path to the SQL query folder'),
+        string(name: 'Credentials_ID', description: 'ID of the DB server credentials')
+    ])
+])
+
+node("Win-JumpBox") {
+    deleteDir()
+
+    try {
+        stage("Checkout Endpoint Automation") {
+            dir('git-queries') {
+                println("Checking out from branch: ${branch}")
+                microserviceBuild.checkOut(githubUrl, branch, githubUser)
+            }
+        }
+
+        stage("Checkout Spain SQL Store") {
+            dir('sql-queries') {
+                println("Checking out from branch: ${branch}")
+                microserviceBuild.checkOut(spaingithubUrl, branch, githubUser)
+            }
+        }
+
+        stage("Execute SQL Queries") {
+            withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                bat """
+                echo Running SQL script...
+                python git-queries/sql-deployment-scripts/run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Query_Folder_Path%
+                echo Done running SQL script.
+                """
+            }
+        }
+    } catch (e) {
+        notifications.microserviceTeamsNotification(teamName, "failed", branch)
+        error(e.getMessage())
+    } finally {
+        deleteDir()
+    }
+}

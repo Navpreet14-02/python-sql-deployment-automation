@@ -1,0 +1,108 @@
+@Library("P-Funk")
+import org.daas_watchguard.basefunctions.*
+import org.daas_watchguard.notifications.*
+
+def microserviceBuild = new Microservices() // org.daas_watchguard.basefunctions.Microservices
+def notifications = new Teams() // org.daas_watchguard.notifications.Teams
+
+String githubUser = "jenkins-gh"
+String githubEnterprise = "github.infra.int.daas-watchguard.com"
+String teamName = "Team-Infrastructure"
+String repoName = "endpoint-automation"
+String spainrepoName = "spain-sql-store"
+
+String githubUrl = "https://${githubEnterprise}/${teamName}/${repoName}.git"
+String spaingithubUrl = "https://${githubEnterprise}/${teamName}/${spainrepoName}.git"
+
+// Define branch variable
+String branch = env.BRANCH_NAME
+
+// Define parameters
+properties([
+    parameters([
+        string(name: 'Server_Name', description: 'Name of the server'),
+        string(name: 'Database_Name', description: 'Name of the database'),
+        string(name: 'Table_Name', description: 'Name of the table to backup'),
+        string(name: 'Query_Folder_Path', description: 'Path to the SQL query folder'),
+        string(name: 'Credentials_ID', description: 'ID of the DB server credentials'),
+        choice (choices: ['Backup and Execute', 'Remove Backup'], description: 'Action to be performed on the Database', name : 'DatabaseAction')
+    ])
+])
+
+node("Win-JumpBox") {
+    deleteDir()
+
+    try {
+        stage("Checkout Endpoint Automation") {
+            dir('py-automation-script') {
+                println("Checking out from branch: ${branch}")
+                microserviceBuild.checkOut(githubUrl, branch, githubUser)
+            }
+        }
+
+        stage("Checkout Spain SQL Store") {
+            dir('sql-queries') {
+                println("Checking out from branch: ${branch}")
+                microserviceBuild.checkOut(spaingithubUrl, branch, githubUser)
+            }
+        }
+
+        stage("Backup Database Table") {
+
+
+            if(params.DatabaseAction=="Backup and Execute"){
+
+                dir("py-automation-script/backup") {
+                    echo "Listing directory contents before running the script:"
+                    bat "dir"
+
+                    withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                        bat """
+                        echo Taking table backup...
+                        python run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Table_Name%
+                        echo Table backup completed.
+                        """
+                    }
+                }
+
+            }
+        }
+
+        stage("Execute SQL Queries") {
+
+            if(params.DatabaseAction=="Backup and Execute"){
+
+                withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                    bat """
+                    echo Running SQL script...
+                    python py-automation-script/sql-deployment-scripts/run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Query_Folder_Path%
+                    echo Done running SQL script.
+                    """
+                }
+
+            }
+        }
+
+
+        stage("Remove Backup"){
+
+            if(params.DatabaseAction=="Remove Backup"){    
+
+                withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                    bat """
+                    echo Removing Backup...
+                    python py-automation-script/removeBackup/run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Table_Name%
+                    echo Backup Removed Successfully.
+                    """
+                }
+            
+            }
+        }
+
+    } catch (e) {
+        // notifications.microserviceTeamsNotification(teamName, "failed", branch)
+        error(e.getMessage())
+    } finally {
+        deleteDir()
+    }
+}
