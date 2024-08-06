@@ -24,11 +24,7 @@ class DatabaseExecutor:
         logging.info("Sorted SQL files:")
         for file in sql_files:
             logging.info(file)
-
-
-        isexception=False
-        exceptionOccured=None
-
+        
         try:
             for sql_file in sql_files:
                 file_path = os.path.join(folder_path, sql_file)
@@ -48,12 +44,7 @@ class DatabaseExecutor:
             logging.error(f"Failed to execute SQL file {file_path}: {ex}")
             self.connection.rollback()
             logging.info("Transaction Rolled Back")
-            isexception=True
-            exceptionOccured=ex
-            
-            if(isexception): 
-                logging.info(f"Quitting Program. Error Orccurred: {exceptionOccured}")
-                quit()
+            raise Exception(ex)
 
         self.connection.commit()
         self.connection.close()
