@@ -19,10 +19,12 @@ def BackupDB(server_name, database, username, password, table_name):
             try:
                 cursor.execute(backup_query)
                 conn.commit()
-                print("Backup completed successfully.")
+                tablerowCount = cursor.rowcount
+
+                print(f"Backup completed successfully. Rows affected: {tablerowCount}")
             except pyodbc.Error as err:
                 print(f"Error while creating backup: {err}")
-                # conn.rollback()
+                conn.rollback()
 
     except pyodbc.Error as err:
         print(f"Database Connection could not be established: {err}")

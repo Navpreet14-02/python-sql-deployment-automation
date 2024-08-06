@@ -1,33 +1,87 @@
 @Library("P-Funk")
+
 import org.daas_watchguard.basefunctions.*
 import org.daas_watchguard.notifications.*
+import org.daas_watchguard.validators.*
+import org.wgc.deployment.accountgroup.*
+import org.wgc.deployment.environment.*
+import org.wgc.deployment.region.*
+import org.wgc.jenkins.parameter.*
+import org.wgc.jenkins.property.*
+import org.wgc.jenkins.config.*
+import org.wgc.deployment.overrides.*
+import org.wgc.sonarqube.*
+
+
 
 def microserviceBuild = new Microservices() // org.daas_watchguard.basefunctions.Microservices
 def notifications = new Teams() // org.daas_watchguard.notifications.Teams
 
-String githubUser = "jenkins-gh"
+String githubUser = "Nav-Gh-Creds"
 String githubEnterprise = "github.infra.int.daas-watchguard.com"
 String teamName = "Team-Infrastructure"
 String repoName = "endpoint-automation"
 String spainrepoName = "spain-sql-store"
 
-String githubUrl = "https://${githubEnterprise}/${teamName}/${repoName}.git"
-String spaingithubUrl = "https://${githubEnterprise}/${teamName}/${spainrepoName}.git"
+// String githubUrl = "https://${githubEnterprise}/${teamName}/${repoName}.git"
+String githubUrl = "https://github.com/Navpreet14-02/python-sql-deployment-automation"
+// String spaingithubUrl = "https://${githubEnterprise}/${teamName}/${spainrepoName}.git"
+String spaingithubUrl = "https://github.com/Navpreet14-02/sql-store"
 
 // Define branch variable
 String branch = env.BRANCH_NAME
 
-// Define parameters
-properties([
-    parameters([
-        string(name: 'Server_Name', description: 'Name of the server'),
-        string(name: 'Database_Name', description: 'Name of the database'),
-        string(name: 'Table_Name', description: 'Name of the table to backup'),
-        string(name: 'Query_Folder_Path', description: 'Path to the SQL query folder'),
-        string(name: 'Credentials_ID', description: 'ID of the DB server credentials'),
-        choice (choices: ['Backup and Execute', 'Remove Backup'], description: 'Action to be performed on the Database', name : 'DatabaseAction')
-    ])
-])
+JobProperties jobProps = new JobProperties(this)
+jobProps.addStandard([JobProperties.DISABLE_CONCURRENT_BUILDS,JobProperties.DISCARD_OLD_BUILDS])
+
+JobParameters jobParams = new JobParameters(this)
+
+StringJobParameter serverNameParam = new StringJobParameter(
+    name:"Server_Name",
+    description:"Name of the server",
+    defaultValue:""
+)
+StringJobParameter databaseNameParam = new StringJobParameter(
+    name:"Database_Name",
+    description:"Name of the database",
+    defaultValue:""
+)
+StringJobParameter tableNameParam = new StringJobParameter(
+    name:"Table_Name",
+    description:"Name of the Table",
+    defaultValue:""
+)
+StringJobParameter queryFolderPathParam = new StringJobParameter(
+    name:"Query_Folder_Path",
+    description:"Path to the SQL query folder",
+    defaultValue:""
+)
+StringJobParameter credentialsIdParam = new StringJobParameter(
+    name:"Credentials_ID",
+    description:"ID of the DB server credentials",
+    defaultValue:""
+)
+ChoiceJobParameter databaseActionParam = new ChoiceJobParameter(
+    name:"DatabaseAction",
+    description:"Action to be performed on the Database",
+    choices:['Backup and Execute', 'Remove Backup']
+)
+
+jobParams.addCustom([serverNameParam,databaseNameParam,tableNameParam,queryFolderPathParam,credentialsIdParam,databaseActionParam])
+
+
+String environment = "test"
+
+String serverName=params.get(serverNameParam.name)
+String databaseName=params.get(databaseNameParam.name)
+String tableName=params.get(tableNameParam.name)
+String queryFolderPath=params.get(queryFolderPathParam.name)
+String credentialsId=params.get(credentialsIdParam.name)
+String databaseAction=params.get(databaseActionParam.name)
+
+JobConfig jobConfig = new JobConfig(this,jobParams,jobProps,environment)
+jobConfig.build()
+
 
 node("Win-JumpBox") {
     deleteDir()
@@ -35,67 +89,82 @@ node("Win-JumpBox") {
     try {
         stage("Checkout Endpoint Automation") {
             dir('py-automation-script') {
-                println("Checking out from branch: ${branch}")
-                microserviceBuild.checkOut(githubUrl, branch, githubUser)
+                println("Checking out from branch: singledb")
+                microserviceBuild.checkOut(githubUrl, "singledb", githubUser)
             }
         }
 
         stage("Checkout Spain SQL Store") {
             dir('sql-queries') {
-                println("Checking out from branch: ${branch}")
-                microserviceBuild.checkOut(spaingithubUrl, branch, githubUser)
+                println("Checking out from branch: ${sqlQueriesBranch}")
+                microserviceBuild.checkOut(spaingithubUrl, "main", githubUser)
             }
         }
 
         stage("Backup Database Table") {
 
-
-            if(params.DatabaseAction=="Backup and Execute"){
+            if(databaseAction=="Backup and Execute"){
 
                 dir("py-automation-script/backup") {
-                    echo "Listing directory contents before running the script:"
-                    bat "dir"
+                    // echo "Listing directory contents before running the script:"
+                    // bat "dir"
 
-                    withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
                         bat """
                         echo Taking table backup...
-                        python run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Table_Name%
+                        python run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
                         echo Table backup completed.
                         """
                     }
                 }
-
             }
+            else{
+                echo "Skipping this Stage. Chosen Action: ${databaseAction}"
+            }
+            
         }
 
         stage("Execute SQL Queries") {
 
-            if(params.DatabaseAction=="Backup and Execute"){
 
-                withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
-                    bat """
-                    echo Running SQL script...
-                    python py-automation-script/sql-deployment-scripts/run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Query_Folder_Path%
-                    echo Done running SQL script.
-                    """
+            if(databaseAction=="Backup and Execute"){
+
+                try{
+                    withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                        bat """
+                        echo Running SQL script...
+                        python py-automation-script/sql-deployment-scripts/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --query-folder-path %Query_Folder_Path%
+                        echo Done running SQL script.
+                        """
+                    }
+                }
+                catch(Exception exc){
+                    echo "Error occurred while executing queries: ${exc}"
+                    currentBuild.result = 'FAILURE'
                 }
 
+            }
+            else{
+                echo "Skipping this Stage. Chosen Action: ${databaseAction}"
             }
         }
 
 
         stage("Remove Backup"){
 
-            if(params.DatabaseAction=="Remove Backup"){    
+            if(databaseAction=="Remove Backup"){    
 
-                withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
                     bat """
                     echo Removing Backup...
-                    python py-automation-script/removeBackup/run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Table_Name%
+                    python py-automation-script/removeBackup/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
                     echo Backup Removed Successfully.
                     """
                 }
             
+            }
+            else{
+                echo "Skipping this Stage. Chosen Action: ${databaseAction}"
             }
         }
 

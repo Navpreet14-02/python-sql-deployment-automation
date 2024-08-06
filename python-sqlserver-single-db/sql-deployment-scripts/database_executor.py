@@ -41,6 +41,11 @@ class DatabaseExecutor:
                     logging.info(f"Executed {file_path} successfully.")
             except Exception as ex:
                 logging.error(f"Failed to execute SQL file {file_path}: {ex}")
+                self.connection.rollback()
+                logging.info("Transaction Rolled Back")
+
+                raise Exception(ex)
+                # quit()
 
         self.connection.close()
         logging.info("Database connection closed.")
@@ -74,9 +79,10 @@ class DatabaseExecutor:
                             results = self.cursor.fetchall()
                             for row in results:
                                 logging.info(row)
+
         except pyodbc.Error as ex:
-            logging.error(f"SQL execution error: {ex}")
-            raise
+            # logging.error(f"SQL execution error: {ex}")
+            raise Exception(ex)
 
     def split_sql_batches(self, sql_query):
         """Split SQL query into batches by handling 'GO' statements."""

@@ -1,5 +1,3 @@
-
-
 import pyodbc
 from datetime import date
 
