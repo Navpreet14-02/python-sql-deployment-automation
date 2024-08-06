@@ -96,7 +96,7 @@ node("Win-JumpBox") {
 
         stage("Checkout Spain SQL Store") {
             dir('sql-queries') {
-                println("Checking out from branch: ${sqlQueriesBranch}")
+                println("Checking out from branch: sql-store")
                 microserviceBuild.checkOut(spaingithubUrl, "main", githubUser)
             }
         }
@@ -139,8 +139,9 @@ node("Win-JumpBox") {
                     }
                 }
                 catch(Exception exc){
-                    echo "Error occurred while executing queries: ${exc}"
-                    currentBuild.result = 'FAILURE'
+                    error "Error occurred while executing queries: ${exc}"
+                    // currentBuild.result = 'FAILURE'
+                    
                 }
 
             }
