@@ -27,6 +27,7 @@ class DatabaseExecutor:
 
 
         isexception=False
+        exceptionOccured=None
 
         try:
             for sql_file in sql_files:
@@ -48,11 +49,11 @@ class DatabaseExecutor:
             self.connection.rollback()
             logging.info("Transaction Rolled Back")
             isexception=True
-            raise Exception(ex)
-
-        if(isexception): 
-            logging.info("Quitting Program")
-            quit()
+            exceptionOccured=ex
+            
+            if(isexception): 
+                logging.info(f"Quitting Program. Error Orccurred: {exceptionOccured}")
+                quit()
 
         self.connection.commit()
         self.connection.close()
