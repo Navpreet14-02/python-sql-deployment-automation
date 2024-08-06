@@ -132,9 +132,7 @@ node("Win-JumpBox") {
                 try{
                     withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
                         bat """
-                        echo Running SQL script...
                         python py-automation-script/python-sqlserver-single-db/sql-deployment-scripts/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --query-folder-path %Query_Folder_Path%
-                        echo Done running SQL script.
                         """
                     }
                 }
