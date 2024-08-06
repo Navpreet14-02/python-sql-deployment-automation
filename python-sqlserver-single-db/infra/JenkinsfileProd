@@ -139,7 +139,7 @@ node("Win-JumpBox") {
                     }
                 }
                 catch(Exception exc){
-                    error "Error occurred while executing queries: ${exc}"
+                    error "Error occurred while executing queries."
                     // currentBuild.result = 'FAILURE'
                     
                 }

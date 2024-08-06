@@ -72,6 +72,9 @@ if __name__ == "__main__":
     password = args.password
     folder_path = args.query_folder_path
 
-    logging.info(f"Starting SQL execution with server={server}, database={database}, folder_path={folder_path}")
-    execute_sql_files(server, database, username, password, folder_path)
-    logging.info("SQL execution completed.")
+    try:
+        logging.info(f"Starting SQL execution with server={server}, database={database}, folder_path={folder_path}")
+        execute_sql_files(server, database, username, password, folder_path)
+        logging.info("SQL execution completed.")
+    except Exception as ex:
+        raise Exception(ex)

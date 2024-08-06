@@ -41,7 +41,7 @@ class DatabaseExecutor:
                     logging.info(f"Executed {file_path} successfully.")
                     
         except Exception as ex:
-            logging.error(f"Failed to execute SQL file {file_path}: {ex}")
+            logging.error(f"Failed to execute SQL file {file_path}")
             self.connection.rollback()
             logging.info("Transaction Rolled Back")
             raise Exception(ex)
