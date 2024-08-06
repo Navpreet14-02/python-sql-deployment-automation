@@ -25,10 +25,13 @@ class DatabaseExecutor:
         for file in sql_files:
             logging.info(file)
 
-        for sql_file in sql_files:
-            file_path = os.path.join(folder_path, sql_file)
-            try:
-                # Detect file encoding
+
+        isexception=False
+
+        try:
+            for sql_file in sql_files:
+                file_path = os.path.join(folder_path, sql_file)
+                    # Detect file encoding
                 with open(file_path, 'rb') as file:
                     raw_data = file.read()
                     result = chardet.detect(raw_data)
@@ -39,22 +42,25 @@ class DatabaseExecutor:
                     logging.info(f"Executing SQL file {file_path}")
                     self.execute(sql_query)
                     logging.info(f"Executed {file_path} successfully.")
-            except Exception as ex:
-                logging.error(f"Failed to execute SQL file {file_path}: {ex}")
-                self.connection.rollback()
-                logging.info("Transaction Rolled Back")
+                    
+        except Exception as ex:
+            logging.error(f"Failed to execute SQL file {file_path}: {ex}")
+            self.connection.rollback()
+            logging.info("Transaction Rolled Back")
+            isexception=True
+            raise Exception(ex)
 
-                raise Exception(ex)
-                # quit()
+        if(isexception): 
+            logging.info("Quitting Program")
+            quit()
 
+        self.connection.commit()
         self.connection.close()
         logging.info("Database connection closed.")
 
     def execute(self, sql_query):
-        try:
             # Split the SQL query into batches using 'GO' command
             batches = self.split_sql_batches(sql_query)
-
             for batch in batches:
                 batch = batch.strip()
                 if batch:
@@ -68,7 +74,7 @@ class DatabaseExecutor:
                         for row in results:
                             logging.info(row)
                     else:
-                        self.connection.commit()
+                        
                         logging.info(f"Statement executed successfully: {batch}")
                         logging.info(f"Rows affected: {self.cursor.rowcount}")
 
@@ -79,10 +85,6 @@ class DatabaseExecutor:
                             results = self.cursor.fetchall()
                             for row in results:
                                 logging.info(row)
-
-        except pyodbc.Error as ex:
-            # logging.error(f"SQL execution error: {ex}")
-            raise Exception(ex)
 
     def split_sql_batches(self, sql_query):
         """Split SQL query into batches by handling 'GO' statements."""
