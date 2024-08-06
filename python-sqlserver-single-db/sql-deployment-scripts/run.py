@@ -77,4 +77,4 @@ if __name__ == "__main__":
         execute_sql_files(server, database, username, password, folder_path)
         logging.info("SQL execution completed.")
     except Exception as ex:
-        raise Exception(ex)
+        raise 

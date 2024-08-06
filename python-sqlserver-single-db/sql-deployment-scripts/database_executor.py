@@ -44,7 +44,7 @@ class DatabaseExecutor:
             logging.error(f"Failed to execute SQL file {file_path}")
             self.connection.rollback()
             logging.info("Transaction Rolled Back")
-            raise Exception(ex)
+            raise
 
         self.connection.commit()
         self.connection.close()
