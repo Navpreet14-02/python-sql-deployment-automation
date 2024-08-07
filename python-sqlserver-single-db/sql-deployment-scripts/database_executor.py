@@ -39,7 +39,6 @@ class DatabaseExecutor:
                     logging.info(f"Executing SQL file {file_path}")
                     self.execute(sql_query)
                     logging.info(f"Executed {file_path} successfully.")
-                    
         except Exception as ex:
             logging.error(f"Failed to execute SQL file {file_path}")
             self.connection.rollback()
@@ -51,32 +50,31 @@ class DatabaseExecutor:
         logging.info("Database connection closed.")
 
     def execute(self, sql_query):
-            # Split the SQL query into batches using 'GO' command
-            batches = self.split_sql_batches(sql_query)
-            for batch in batches:
-                batch = batch.strip()
-                if batch:
-                    logging.info(f"Executing batch: {batch}")
-                    self.cursor.execute(batch)
-                    if batch.lower().startswith("select"):
+        # Split the SQL query into batches using 'GO' command
+        batches = self.split_sql_batches(sql_query)
+        for batch in batches:
+            batch = batch.strip()
+            if batch:
+                logging.info(f"Executing batch: {batch}")
+                self.cursor.execute(batch)
+                if batch.lower().startswith("select"):
+                    columns = [column[0] for column in self.cursor.description]
+                    logging.info(f"Statement executed successfully: {batch}")
+                    logging.info(f"Columns: {columns}")
+                    results = self.cursor.fetchall()
+                    for row in results:
+                        logging.info(row)
+                else:
+                    logging.info(f"Statement executed successfully: {batch}")
+                    logging.info(f"Rows affected: {self.cursor.rowcount}")
+
+                while self.cursor.nextset():
+                    if self.cursor.description:
                         columns = [column[0] for column in self.cursor.description]
-                        logging.info(f"Statement executed successfully: {batch}")
                         logging.info(f"Columns: {columns}")
                         results = self.cursor.fetchall()
                         for row in results:
                             logging.info(row)
-                    else:
-                        
-                        logging.info(f"Statement executed successfully: {batch}")
-                        logging.info(f"Rows affected: {self.cursor.rowcount}")
-
-                    while self.cursor.nextset():
-                        if self.cursor.description:
-                            columns = [column[0] for column in self.cursor.description]
-                            logging.info(f"Columns: {columns}")
-                            results = self.cursor.fetchall()
-                            for row in results:
-                                logging.info(row)
 
     def split_sql_batches(self, sql_query):
         """Split SQL query into batches by handling 'GO' statements."""

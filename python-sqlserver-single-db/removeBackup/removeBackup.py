@@ -19,7 +19,8 @@ def RemoveBackup(server_name, database, username, password, table_name):
             try:
                 cursor.execute(remove_backup_query)
                 conn.commit()
-                print("Backup Removed successfully.")
+                tablerowCount = cursor.rowcount
+                print(f"Backup Removed successfully.Rows affected {tablerowCount}")
             except pyodbc.Error as err:
                 print(f"Error while Removing Backup: {err}")
                 # conn.rollback()
