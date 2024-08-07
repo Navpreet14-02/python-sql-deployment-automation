@@ -113,9 +113,7 @@ node("Win-JumpBox") {
 
                         withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
                             bat """
-                            echo Taking table backup...
                             python run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
-                            echo Table backup completed.
                             """
                         }
                     }
@@ -167,9 +165,7 @@ node("Win-JumpBox") {
                 try{
                     withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
                         bat """
-                        echo Removing Backup...
                         python py-automation-script/python-sqlserver-single-db/removeBackup/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
-                        echo Backup Removed Successfully.
                         """
                     }
 
