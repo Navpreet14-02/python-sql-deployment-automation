@@ -109,13 +109,23 @@ node("Win-JumpBox") {
                     // echo "Listing directory contents before running the script:"
                     // bat "dir"
 
-                    withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
-                        bat """
-                        echo Taking table backup...
-                        python run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
-                        echo Table backup completed.
-                        """
+                    try{
+
+                        withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                            bat """
+                            echo Taking table backup...
+                            python run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
+                            echo Table backup completed.
+                            """
+                        }
                     }
+                    catch(Exception exc){
+                        error "Error occurred while taking backup."
+                        // currentBuild.result = 'FAILURE'
+                        
+                    }
+
+
                 }
             }
             else{
@@ -153,13 +163,23 @@ node("Win-JumpBox") {
 
             if(databaseAction=="Remove Backup"){    
 
-                withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
-                    bat """
-                    echo Removing Backup...
-                    python py-automation-script/python-sqlserver-single-db/removeBackup/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
-                    echo Backup Removed Successfully.
-                    """
+
+                try{
+                    withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                        bat """
+                        echo Removing Backup...
+                        python py-automation-script/python-sqlserver-single-db/removeBackup/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
+                        echo Backup Removed Successfully.
+                        """
+                    }
+
                 }
+                catch(Exception exc){
+                    error "Error occurred while removing backup."
+                    // currentBuild.result = 'FAILURE'
+                    
+                }
+                
             
             }
             else{

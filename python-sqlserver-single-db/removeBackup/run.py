@@ -51,4 +51,7 @@ if __name__ == "__main__":
     password = args.password
     table_name = args.table_name
 
-    RemoveBackup(server, database, username, password, table_name)
+    try:
+        RemoveBackup(server, database, username, password, table_name)
+    except Exception as ex:
+        raise

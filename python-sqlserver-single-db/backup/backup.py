@@ -25,6 +25,9 @@ def BackupDB(server_name, database, username, password, table_name):
             except pyodbc.Error as err:
                 print(f"Error while creating backup: {err}")
                 conn.rollback()
+                print("Backup Operation Rolled Back")
+                raise
 
     except pyodbc.Error as err:
         print(f"Database Connection could not be established: {err}")
+        raise

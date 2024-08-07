@@ -23,7 +23,10 @@ def RemoveBackup(server_name, database, username, password, table_name):
                 print(f"Backup Removed successfully.Rows affected {tablerowCount}")
             except pyodbc.Error as err:
                 print(f"Error while Removing Backup: {err}")
-                # conn.rollback()
+                conn.rollback()
+                print(f"Backup Removal Operation Rolled Back")
+                raise
 
     except pyodbc.Error as err:
         print(f"Database Connection could not be established: {err}")
+        raise
