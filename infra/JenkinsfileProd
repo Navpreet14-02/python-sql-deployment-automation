@@ -17,16 +17,14 @@ import org.wgc.sonarqube.*
 def microserviceBuild = new Microservices() // org.daas_watchguard.basefunctions.Microservices
 def notifications = new Teams() // org.daas_watchguard.notifications.Teams
 
-String githubUser = "Nav-Gh-Creds"
+String githubUser = "jenkins-gh"
 String githubEnterprise = "github.infra.int.daas-watchguard.com"
 String teamName = "Team-Infrastructure"
 String repoName = "endpoint-automation"
 String spainrepoName = "spain-sql-store"
 
-// String githubUrl = "https://${githubEnterprise}/${teamName}/${repoName}.git"
-String githubUrl = "https://github.com/Navpreet14-02/python-sql-deployment-automation"
-// String spaingithubUrl = "https://${githubEnterprise}/${teamName}/${spainrepoName}.git"
-String spaingithubUrl = "https://github.com/Navpreet14-02/sql-store"
+String githubUrl = "https://${githubEnterprise}/${teamName}/${repoName}.git"
+String spaingithubUrl = "https://${githubEnterprise}/${teamName}/${spainrepoName}.git"
 
 // Define branch variable
 String branch = env.BRANCH_NAME
@@ -89,15 +87,15 @@ node("Win-JumpBox") {
     try {
         stage("Checkout Endpoint Automation") {
             dir('py-automation-script') {
-                println("Checking out from branch: singledb")
-                microserviceBuild.checkOut(githubUrl, "singledb", githubUser)
+                println("Checking out from branch: ${branch}")
+                microserviceBuild.checkOut(githubUrl, branch, githubUser)
             }
         }
 
         stage("Checkout Spain SQL Store") {
             dir('sql-queries') {
-                println("Checking out from branch: sql-store")
-                microserviceBuild.checkOut(spaingithubUrl, "main", githubUser)
+                println("Checking out from branch: ${branch}")
+                microserviceBuild.checkOut(spaingithubUrl, branch, githubUser)
             }
         }
 
@@ -105,26 +103,26 @@ node("Win-JumpBox") {
 
             if(databaseAction=="Backup and Execute"){
 
-                dir("py-automation-script/python-sqlserver-single-db/backup") {
-                    // echo "Listing directory contents before running the script:"
-                    // bat "dir"
-
+                dir("py-automation-script/src/backup") {
+                    
                     try{
 
                         withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
                             bat """
-                            python run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
+                            echo Taking table backup...
+                            python run.py --server-name ${serverName} --database-name ${databaseName} --username %DB_USERNAME% --password %DB_PASSWORD% --table-name ${tableName}
+                            echo Table backup completed.
                             """
                         }
                     }
                     catch(Exception exc){
                         error "Error occurred while taking backup."
-                        // currentBuild.result = 'FAILURE'
                         
                     }
 
 
                 }
+
             }
             else{
                 echo "Skipping this Stage. Chosen Action: ${databaseAction}"
@@ -137,17 +135,21 @@ node("Win-JumpBox") {
 
             if(databaseAction=="Backup and Execute"){
 
-                try{
-                    withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
-                        bat """
-                        python py-automation-script/python-sqlserver-single-db/sql-deployment-scripts/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --query-folder-path %Query_Folder_Path%
-                        """
+                dir("py-automation-script/src/sql-deployment-scripts"){
+
+                    try{
+                        withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                            bat """
+                            echo Running SQL script...
+                            python run.py --server-name ${serverName} --database-name ${databaseName} --username %DB_USERNAME% --password %DB_PASSWORD% --query-folder-path ${queryFolderPath}
+                            echo Done running SQL script.
+                            """
+                        }
                     }
-                }
-                catch(Exception exc){
-                    error "Error occurred while executing queries."
-                    // currentBuild.result = 'FAILURE'
-                    
+                    catch(Exception exc){
+                        error "Error occurred while executing queries."
+                    }
+
                 }
 
             }
@@ -161,21 +163,22 @@ node("Win-JumpBox") {
 
             if(databaseAction=="Remove Backup"){    
 
-
-                try{
-                    withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
-                        bat """
-                        python py-automation-script/python-sqlserver-single-db/removeBackup/run.py --server-name %Server_Name% --database-name %Database_Name% --username %DB_USERNAME% --password %DB_PASSWORD% --table-name %Table_Name%
-                        """
+                dir("py-automation-script/src/removeBackup"){
+                    try{
+                        
+                        withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                            bat """
+                            echo Removing Backup...
+                            python run.py --server-name ${serverName} --database-name ${databaseName} --username %DB_USERNAME% --password %DB_PASSWORD% --table-name ${tableName}
+                            echo Backup Removed Successfully.
+                            """
+                        }
                     }
-
+                    catch(Exception exc){
+                        error "Error occurred while removing backup."
+                        
+                    }
                 }
-                catch(Exception exc){
-                    error "Error occurred while removing backup."
-                    // currentBuild.result = 'FAILURE'
-                    
-                }
-                
             
             }
             else{
@@ -184,7 +187,7 @@ node("Win-JumpBox") {
         }
 
     } catch (e) {
-        // notifications.microserviceTeamsNotification(teamName, "failed", branch)
+        notifications.microserviceTeamsNotification(teamName, "failed", branch)
         error(e.getMessage())
     } finally {
         deleteDir()

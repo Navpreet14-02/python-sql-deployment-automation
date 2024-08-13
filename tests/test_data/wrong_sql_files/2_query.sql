@@ -1,0 +1,1 @@
+ALTER TALE dbo.ActivitySources ADD LastActivityService datetime NULL

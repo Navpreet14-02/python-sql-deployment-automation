@@ -71,7 +71,7 @@ node("Win-JumpBox") {
 
     try {
         stage("Checkout Endpoint Automation") {
-            dir('git-queries') {
+            dir('py-automation-script') {
                 println("Checking out from branch: ${branch}")
                 microserviceBuild.checkOut(githubUrl, branch, githubUser)
             }
@@ -85,13 +85,25 @@ node("Win-JumpBox") {
         }
 
         stage("Execute SQL Queries") {
-            withCredentials([usernamePassword(credentialsId: "${params.Credentials_ID}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
-                bat """
-                echo Running SQL script...
-                python git-queries/sql-deployment-scripts/run.py %Server_Name% %Database_Name% %DB_USERNAME% %DB_PASSWORD% %Query_Folder_Path%
-                echo Done running SQL script.
-                """
+
+            dir("py-automation-script/src/sql-deployment-scripts"){
+
+                try{
+                    withCredentials([usernamePassword(credentialsId: "${credentialsId}", usernameVariable: 'DB_USERNAME', passwordVariable: 'DB_PASSWORD')]) {
+                        bat """
+                        echo Running SQL script...
+                        python run.py --server-name ${serverName} --database-name ${databaseName} --username %DB_USERNAME% --password %DB_PASSWORD% --query-folder-path ${queryFolderPath}
+                        echo Done running SQL script.
+                        """
+                    }
+                }
+                catch(Exception exc){
+                    error "Error occurred while executing queries."
+                }
+
             }
+
+
         }
     } catch (e) {
         notifications.microserviceTeamsNotification(teamName, "failed", branch)

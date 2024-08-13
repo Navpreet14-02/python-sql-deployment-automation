@@ -6,10 +6,16 @@ import chardet
 
 class DatabaseExecutor:
     def __init__(self, server, database, username, password):
-        self.__connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}"
-        self.connection = pyodbc.connect(self.__connection_string)
-        self.cursor = self.connection.cursor()
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+        try:
+            self.__connection_string = f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}"
+            self.connection = pyodbc.connect(self.__connection_string)
+            self.cursor = self.connection.cursor()
+        except Exception as ex:
+            logging.error(f"Error while Connecting to Database: {ex}")
+            raise
+        
 
     def execute_sql_from_folder(self, folder_path):
         def extract_index(filename):
@@ -24,7 +30,7 @@ class DatabaseExecutor:
         logging.info("Sorted SQL files:")
         for file in sql_files:
             logging.info(file)
-        
+
         try:
             for sql_file in sql_files:
                 file_path = os.path.join(folder_path, sql_file)
@@ -43,13 +49,14 @@ class DatabaseExecutor:
             logging.error(f"Failed to execute SQL file {file_path}")
             self.connection.rollback()
             logging.info("Transaction Rolled Back")
-            raise
-
+            raise 
+                
         self.connection.commit()
         self.connection.close()
         logging.info("Database connection closed.")
 
     def execute(self, sql_query):
+        
         # Split the SQL query into batches using 'GO' command
         batches = self.split_sql_batches(sql_query)
         for batch in batches:
@@ -75,6 +82,7 @@ class DatabaseExecutor:
                         results = self.cursor.fetchall()
                         for row in results:
                             logging.info(row)
+
 
     def split_sql_batches(self, sql_query):
         """Split SQL query into batches by handling 'GO' statements."""
