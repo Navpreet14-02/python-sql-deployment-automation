@@ -118,7 +118,7 @@ node("Win-JumpBox") {
 
             sqTesting.sqScannerWithCoverage(teamName, repoName, branch, 'py-automation-script/src', 'tests', 'coverage.xml', 'python')
             timeout(time:1, unit:'HOURS'){
-                woithSonarQubeEnv('SonarQube'){
+                withSonarQubeEnv('SonarQube'){
                     def qg = waitForQualityGate()
                     if(qg.status != 'OK'){
                         currentBuild.result = 'UNSTABLE'
