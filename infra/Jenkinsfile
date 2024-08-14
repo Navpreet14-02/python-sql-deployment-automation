@@ -1,29 +1,34 @@
 @Library("P-Funk")
-import org.daas_watchguard.basefunctions.*
-import org.daas_watchguard.notifications.*
-import org.daas_watchguard.validators.*
-import org.wgc.deployment.accountgroup.*
-import org.wgc.deployment.environment.*
+
+import org.wgc.sonarqube.*
+import org.wgc.jenkins.config.*
+import org.wgc.jenkins.property.*
 import org.wgc.deployment.region.*
 import org.wgc.jenkins.parameter.*
-import org.wgc.jenkins.property.*
-import org.wgc.jenkins.config.*
 import org.wgc.deployment.overrides.*
+import org.daas_watchguard.validators.*
+import org.wgc.deployment.environment.*
+import org.wgc.deployment.accountgroup.*
+import org.daas_watchguard.basefunctions.*
+import org.daas_watchguard.notifications.*
 
 def microserviceBuild = new Microservices() // org.daas_watchguard.basefunctions.Microservices
 def notifications = new Teams() // org.daas_watchguard.notifications.Teams
+def sqTesting = new sonarqube()
+
 
 String githubUser = "jenkins-gh"
-String githubEnterprise = "github.infra.int.daas-watchguard.com"
 String teamName = "Team-Infrastructure"
 String repoName = "endpoint-automation"
 String spainrepoName = "spain-sql-store"
+String githubEnterprise = "github.infra.int.daas-watchguard.com"
 
 String githubUrl = "https://${githubEnterprise}/${teamName}/${repoName}.git"
 String spaingithubUrl = "https://${githubEnterprise}/${teamName}/${spainrepoName}.git"
 
 // Define branch variable
 String branch = env.BRANCH_NAME
+String environment = "dev"
 
 
 StringJobParameter serverNameParam = new StringJobParameter(
@@ -48,7 +53,6 @@ StringJobParameter credentialsIdParam = new StringJobParameter(
 )
 
 
-String environment = "test"
 
 String serverName=params.get(serverNameParam.name)
 String databaseName=params.get(databaseNameParam.name)
@@ -62,6 +66,9 @@ jobProps.addStandard([JobProperties.DISABLE_CONCURRENT_BUILDS,JobProperties.DISC
 
 JobParameters jobParams = new JobParameters(this)
 jobParams.addCustom([serverNameParam,databaseNameParam,queryFolderPathParam,credentialsIdParam])
+
+
+SonarQubeAPI sonarQubeAPI = new SonarQubeAPI(this,environment,teamName,repoName,branch)
 
 JobConfig jobConfig = new JobConfig(this,jobParams,jobProps,environment)
 jobConfig.build()
@@ -83,6 +90,32 @@ node("Win-JumpBox") {
                 microserviceBuild.checkOut(spaingithubUrl, branch, githubUser)
             }
         }
+
+        stage("Unit Testing"){
+
+            try{
+                withCredentials([string(credentialsId: 'sonarqube-token', variable:'AUTH_TOKEN')]){
+                    sonarQubeAPI.setSonarQubeTags("projectName",AUTH_TOKEN)
+                    sonarQubeAPI.setQualityGate("Highest-QualityGate",AUTH_TOKEN)
+                    sonarQubeAPI.createWebHook(JENKINS_URL,AUTH_TOKEN)
+                }
+            }
+            catch(e){
+                echo "Error in invoking the sonarqube web api: ${e}"
+            }
+
+            sqTesting.sqScannerWithCoverage(teamName, repoName, branch, 'py-automation-script/src', 'tests', 'coverage.xml', 'python')
+            timeout(time:1, unit:'HOURS'){
+                woithSonarQubeEnv('SonarQube'){
+                    def qg = waitForQualityGate()
+                    if(qg.status != 'OK'){
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
+            }
+
+        }
+
 
         stage("Execute SQL Queries") {
 
