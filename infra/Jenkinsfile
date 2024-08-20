@@ -91,25 +91,44 @@ node("Win-JumpBox") {
             }
         }
 
-        stage("Unit Testing"){
+        stage("Unit Tests"){
+            dir('py-automation-script'){
 
-            try{
-                withCredentials([string(credentialsId: 'sonarqube-token', variable:'AUTH_TOKEN')]){
-                    sonarQubeAPI.setSonarQubeTags("projectName",AUTH_TOKEN)
-                    sonarQubeAPI.setQualityGate("Highest-QualityGate",AUTH_TOKEN)
-                    sonarQubeAPI.createWebHook(JENKINS_URL,AUTH_TOKEN)
+                try{
+                    println('Unit Testing')
+                    bat "python -m pytest"
+                    bat "python -m coverage xml"
+                    pythonTests.pythonCoverageResults()
                 }
-            }
-            catch(e){
-                echo "Error in invoking the sonarqube web api: ${e}"
-            }
+                catch (e){
+                    println(e)
+                    println("No Unit Tests to run.")
+                }
 
-            sqTesting.sqScannerWithCoverage(teamName, repoName, branch, 'py-automation-script/src', 'tests', 'coverage.xml', 'python')
-            timeout(time:1, unit:'HOURS'){
-                withSonarQubeEnv('SonarQube'){
-                    def qg = waitForQualityGate()
-                    if(qg.status != 'OK'){
-                        currentBuild.result = 'UNSTABLE'
+            }
+        }
+
+        stage("Static Analysis"){
+
+            dir('py-automation-script'){
+                try{
+                    withCredentials([string(credentialsId: 'sonarqube-token', variable:'AUTH_TOKEN')]){
+                        sonarQubeAPI.setSonarQubeTags("projectName",AUTH_TOKEN)
+                        sonarQubeAPI.setQualityGate("Highest-QualityGate",AUTH_TOKEN)
+                        sonarQubeAPI.createWebHook(JENKINS_URL,AUTH_TOKEN)
+                    }
+                }
+                catch(e){
+                    echo "Error in invoking the sonarqube web api: ${e}"
+                }
+
+                sqTesting.sqScannerWithCoverage(teamName, repoName, branch, 'src', 'tests', 'coverage.xml', 'python')
+                timeout(time:1, unit:'HOURS'){
+                    withSonarQubeEnv('SonarQube'){
+                        def qg = waitForQualityGate()
+                        if(qg.status != 'OK'){
+                            currentBuild.result = 'UNSTABLE'
+                        }
                     }
                 }
             }
